@@ -1,0 +1,108 @@
+
+---
+title: "Machine Learning Project Part 1"
+date: "Sunday, August 24, 2014"
+---
+
+##Project Background
+
+There are many devices that measure activity of a person.  This study is using this data to predict the activity a person took part in.
+
+##Data
+
+The training data and test data are provided by: http://groupware.les.inf.puc-rio.br/har.  The training and test data are at the below links:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+##R code for creating prediction algorithm
+
+First setting working directory
+
+setwd("C:/Users/Brandon/Downloads")
+
+##loading necessary packages for our analysis
+
+```{r}
+library(caret)
+library(kernlab)
+library(rpart)
+```
+
+##Loading and creating data frames for analysis
+
+```{r}
+train_file <- "pml-training.csv"
+test_file <- "pml-test.csv"
+
+train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+if (!file.exists(test_file)) {
+  download.file(test_url,test_file)
+}
+if (!file.exists(train_file)) {
+  download.file(train_url,train_file)
+}
+
+training_data <-read.csv(train_file, header=TRUE,sep=",")
+testing_data <-read.csv(test_file, header=TRUE,sep=",")
+```
+
+##Modifying training and testing files and subsetting the columns that we need
+
+```{r}
+removecols<-grep("avg|stddev|var|min|max|amplitude|skewness|kurtosis|timestamp|user_name|new_window",names(testing_data),value=FALSE)
+testing_data<-testing_data[,-removecols]
+
+removecols<-grep("avg|stddev|var|min|max|amplitude|skewness|kurtosis|timestamp|user_name|new_window",names(training_data),value=FALSE)
+training_data<-training_data[,-removecols]
+
+testing_data[,1]<-NULL
+training_data[,1]<-NULL
+```
+
+
+##Subsetting and cleaning the data for run an algorithm just on the training dataset, not test data.  75% training data, 25% testing
+
+train_data<-createDataPartition(y=training_data$classe,p=0.75,list=FALSE)
+training_data_subset<-training_data[train_data,]
+testing_data_subset<-training_data[-train_data,]
+
+##Using principal components analysis what compenents have the most explaining power
+
+```{r eval = FALSE}
+pca_1 <-preProcess(training_data_subset[,-54],method="pca",pcaComp=10)
+predict_train<-predict(pca_1,training_data_subset[,-54])
+predict_test<-predict(pca_1,testing_data_subset[,-54])
+```
+
+##Building prediction model using random forests since all explanatory variables are continuous and outcome is a categorical field
+
+##Also, looking into out of sample error between observed and predicted values & estimates
+
+```{r eval = FALSE}
+library(randomForest)
+
+install.packages('e1071', dependencies=TRUE)
+
+library(e1071)
+
+random_forest <- train(x=predict_train,y=training_data_subset$classe,method="rf")
+
+random_forest_fit <-predict(random_forest, predict_test)
+
+confusionMatrix(random_forest_fit,predict_test$classe)
+```
+
+
+
+
+
+
+
+
+
+
